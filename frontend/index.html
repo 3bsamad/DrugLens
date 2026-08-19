@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DrugLens — Medication Assistant</title>
+    <meta name="description" content="Evidence-grounded medication information assistant. Look up drug details, side effects, warnings, and more.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="bg-noise"></div>
+    <div class="bg-gradient"></div>
+
+    <div class="app">
+        <header id="appHeader">
+            <div class="logo">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+                    <path d="M12 8v8M8 12h8"/>
+                </svg>
+                <h1>DrugLens</h1>
+            </div>
+            <p class="tagline">Evidence-grounded medication intelligence</p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <div class="tab-bar">
+            <button class="tab active" data-tab="lookup" id="tabLookup">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                Drug Lookup
+            </button>
+            <button class="tab" data-tab="interactions" id="tabInteractions">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+                Interaction Checker
+            </button>
+        </div>
+
+        <!-- ====================== TAB 1: Drug Lookup ====================== -->
+        <div class="tab-panel active" id="panelLookup">
+            <div class="search-wrapper">
+                <div class="search-container">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                    </svg>
+                    <input type="text" id="drugInput" placeholder="Search any medication..." autocomplete="off" spellcheck="false" />
+                    <button id="searchBtn" aria-label="Search">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="search-hints">
+                    <span class="hint" data-drug="metformin">metformin</span>
+                    <span class="hint" data-drug="ibuprofen">ibuprofen</span>
+                    <span class="hint" data-drug="panadol">panadol</span>
+                    <span class="hint" data-drug="amoxicillin">amoxicillin</span>
+                </div>
+            </div>
+
+            <div id="loading" class="loading hidden">
+                <div class="pulse-ring"></div>
+                <p>Querying FDA database...</p>
+            </div>
+
+            <div id="errorBox" class="error-box hidden"></div>
+
+            <div id="results" class="results hidden">
+                <div class="drug-header" id="drugHeader">
+                    <div class="drug-title-row">
+                        <h2 id="resName"></h2>
+                        <span class="rxcui-badge" id="resRxCui"></span>
+                    </div>
+                    <div class="meta-pills" id="resGenericPills"></div>
+                </div>
+
+                <div class="label-selector" id="labelSelector">
+                    <h3 class="section-label">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        FDA Labels
+                    </h3>
+                    <div class="label-cards" id="labelCards"></div>
+                </div>
+
+                <div class="detail-panel" id="detailPanel">
+                    <div class="detail-sections" id="detailSections"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====================== TAB 2: Interaction Checker ====================== -->
+        <div class="tab-panel" id="panelInteractions">
+            <div class="ix-intro">
+                <p>Enter two or more medications to check for known drug interactions from FDA labeling data.</p>
+            </div>
+
+            <div class="ix-input-area">
+                <div class="ix-drug-list" id="ixDrugList">
+                    <div class="ix-drug-row">
+                        <input type="text" class="ix-input" placeholder="Drug 1 (e.g., metformin)" autocomplete="off" spellcheck="false" />
+                        <button class="ix-remove-btn hidden" aria-label="Remove">×</button>
+                    </div>
+                    <div class="ix-drug-row">
+                        <input type="text" class="ix-input" placeholder="Drug 2 (e.g., warfarin)" autocomplete="off" spellcheck="false" />
+                        <button class="ix-remove-btn hidden" aria-label="Remove">×</button>
+                    </div>
+                </div>
+                <div class="ix-actions">
+                    <button class="ix-add-btn" id="ixAddBtn">+ Add another drug</button>
+                    <button class="ix-check-btn" id="ixCheckBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                        Check Interactions
+                    </button>
+                </div>
+            </div>
+
+            <div id="ixLoading" class="loading hidden">
+                <div class="pulse-ring"></div>
+                <p>Analyzing interactions...</p>
+            </div>
+
+            <div id="ixError" class="error-box hidden"></div>
+
+            <div id="ixResults" class="ix-results hidden">
+                <div id="ixSummary" class="ix-summary"></div>
+                <div id="ixFlags" class="ix-flags"></div>
+                <div id="ixDrugDetails" class="ix-drug-details"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

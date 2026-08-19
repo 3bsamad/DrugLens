@@ -1,0 +1,883 @@
+/* ============================================================
+   DrugLens — Design System & Styles
+   ============================================================ */
+
+:root {
+    --bg: #0c0e14;
+    --bg-surface: #141722;
+    --bg-elevated: #1a1e2e;
+    --bg-hover: #222740;
+    --border: rgba(255, 255, 255, 0.06);
+    --border-active: rgba(255, 255, 255, 0.12);
+    --text-1: #f1f3f8;
+    --text-2: #a0a8c0;
+    --text-3: #636d8a;
+    --accent: #5b8dfa;
+    --accent-glow: rgba(91, 141, 250, 0.15);
+    --accent-2: #a78bfa;
+    --danger: #f87171;
+    --danger-bg: rgba(248, 113, 113, 0.08);
+    --warning: #fbbf24;
+    --warning-bg: rgba(251, 191, 36, 0.08);
+    --success: #34d399;
+    --success-bg: rgba(52, 211, 153, 0.08);
+    --info-bg: rgba(91, 141, 250, 0.08);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
+    --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text-1);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ---- Subtle background texture ---- */
+.bg-noise {
+    position: fixed;
+    inset: 0;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    z-index: 0;
+    pointer-events: none;
+}
+
+.bg-gradient {
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 60% 50% at 20% 0%, rgba(91,141,250,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 80% 100%, rgba(167,139,250,0.06) 0%, transparent 60%);
+    z-index: 0;
+    pointer-events: none;
+}
+
+.app {
+    position: relative;
+    z-index: 1;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+}
+
+/* ============================================================
+   Header
+   ============================================================ */
+header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    animation: fadeIn 0.6s ease-out;
+}
+
+.logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.4rem;
+}
+
+.logo-icon {
+    width: 28px;
+    height: 28px;
+    color: var(--accent);
+}
+
+h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text-1);
+}
+
+.tagline {
+    font-size: 0.9rem;
+    color: var(--text-3);
+    font-weight: 400;
+}
+
+/* ============================================================
+   Search
+   ============================================================ */
+.search-wrapper {
+    margin-bottom: 2rem;
+    animation: fadeIn 0.6s ease-out 0.1s both;
+}
+
+.search-container {
+    display: flex;
+    align-items: center;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 0.3rem 0.4rem 0.3rem 1.2rem;
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.search-container:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.search-icon {
+    width: 20px;
+    height: 20px;
+    color: var(--text-3);
+    flex-shrink: 0;
+}
+
+#drugInput {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text-1);
+    font-size: 1rem;
+    padding: 0.8rem 0.8rem;
+    font-family: inherit;
+}
+
+#drugInput::placeholder {
+    color: var(--text-3);
+}
+
+#searchBtn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition);
+    flex-shrink: 0;
+}
+
+#searchBtn svg {
+    width: 18px;
+    height: 18px;
+}
+
+#searchBtn:hover {
+    background: #4a7ce8;
+    transform: scale(1.05);
+}
+
+.search-hints {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.hint {
+    font-size: 0.78rem;
+    color: var(--text-3);
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    padding: 0.25rem 0.7rem;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.hint:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--accent-glow);
+}
+
+/* ============================================================
+   Loading
+   ============================================================ */
+.loading {
+    text-align: center;
+    padding: 3rem 0;
+}
+
+.loading p {
+    color: var(--text-3);
+    font-size: 0.9rem;
+    margin-top: 1rem;
+}
+
+.pulse-ring {
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    margin: 0 auto;
+    animation: spin 0.8s linear infinite;
+}
+
+.hidden { display: none !important; }
+
+/* ============================================================
+   Error
+   ============================================================ */
+.error-box {
+    background: var(--danger-bg);
+    border: 1px solid rgba(248,113,113,0.2);
+    color: var(--danger);
+    padding: 0.8rem 1.2rem;
+    border-radius: var(--radius-md);
+    text-align: center;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+
+/* ============================================================
+   Results — Drug Header
+   ============================================================ */
+.results {
+    animation: slideUp 0.5s ease-out;
+}
+
+.drug-header {
+    margin-bottom: 1.5rem;
+}
+
+.drug-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.drug-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-transform: capitalize;
+}
+
+.rxcui-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: var(--accent-glow);
+    color: var(--accent);
+    border: 1px solid rgba(91,141,250,0.2);
+    padding: 0.2rem 0.6rem;
+    border-radius: 100px;
+}
+
+.meta-pills {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-top: 0.6rem;
+}
+
+.meta-pill {
+    font-size: 0.78rem;
+    color: var(--text-2);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    padding: 0.2rem 0.6rem;
+    border-radius: 100px;
+}
+
+/* ============================================================
+   Label Selector Cards
+   ============================================================ */
+.label-selector {
+    margin-bottom: 1.5rem;
+}
+
+.section-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-3);
+    margin-bottom: 0.75rem;
+}
+
+.section-label svg {
+    width: 16px;
+    height: 16px;
+}
+
+.label-cards {
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--bg-hover) transparent;
+}
+
+.label-card {
+    flex: 0 0 auto;
+    min-width: 200px;
+    max-width: 280px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.2rem;
+    cursor: pointer;
+    transition: all var(--transition);
+    position: relative;
+}
+
+.label-card:hover {
+    border-color: var(--border-active);
+    background: var(--bg-elevated);
+}
+
+.label-card.active {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+    box-shadow: 0 0 0 1px var(--accent);
+}
+
+.label-card .lc-brand {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--text-1);
+    margin-bottom: 0.3rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.label-card .lc-manufacturer {
+    font-size: 0.75rem;
+    color: var(--text-3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.label-card .lc-route {
+    display: inline-block;
+    margin-top: 0.4rem;
+    font-size: 0.68rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    background: var(--accent-glow);
+    padding: 0.1rem 0.45rem;
+    border-radius: 100px;
+}
+
+/* ============================================================
+   Detail Panel — Accordion Sections
+   ============================================================ */
+.detail-panel {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg-surface);
+    overflow: hidden;
+}
+
+.detail-section {
+    border-bottom: 1px solid var(--border);
+}
+
+.detail-section:last-child {
+    border-bottom: none;
+}
+
+.detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.4rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background var(--transition);
+}
+
+.detail-header:hover {
+    background: var(--bg-hover);
+}
+
+.detail-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.detail-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.dot-info { background: var(--accent); }
+.dot-danger { background: var(--danger); }
+.dot-warning { background: var(--warning); }
+.dot-success { background: var(--success); }
+.dot-neutral { background: var(--text-3); }
+
+.detail-header-title {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-1);
+}
+
+.detail-chevron {
+    width: 16px;
+    height: 16px;
+    color: var(--text-3);
+    transition: transform var(--transition);
+    flex-shrink: 0;
+}
+
+.detail-section.open .detail-chevron {
+    transform: rotate(180deg);
+}
+
+.detail-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease;
+}
+
+.detail-section.open .detail-body {
+    max-height: 2000px;
+}
+
+.detail-content {
+    padding: 0 1.4rem 1.2rem 2.2rem;
+    font-size: 0.88rem;
+    line-height: 1.7;
+    color: var(--text-2);
+}
+
+.detail-content.empty {
+    color: var(--text-3);
+    font-style: italic;
+}
+
+/* quick-info inside detail panel */
+.quick-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 0.75rem 1.4rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.quick-chip {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 100px;
+    font-weight: 500;
+}
+
+.chip-brand {
+    background: rgba(91,141,250,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(91,141,250,0.15);
+}
+
+.chip-substance {
+    background: rgba(52,211,153,0.1);
+    color: var(--success);
+    border: 1px solid rgba(52,211,153,0.15);
+}
+
+.chip-type {
+    background: rgba(167,139,250,0.1);
+    color: var(--accent-2);
+    border: 1px solid rgba(167,139,250,0.15);
+}
+
+/* ============================================================
+   Tab Bar
+   ============================================================ */
+.tab-bar {
+    display: flex;
+    gap: 0.25rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 0.25rem;
+    margin-bottom: 2rem;
+    animation: fadeIn 0.6s ease-out 0.05s both;
+}
+
+.tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1rem;
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-3);
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.tab svg {
+    width: 16px;
+    height: 16px;
+}
+
+.tab:hover {
+    color: var(--text-2);
+    background: var(--bg-elevated);
+}
+
+.tab.active {
+    background: var(--bg-elevated);
+    color: var(--text-1);
+    box-shadow: var(--shadow-sm);
+}
+
+.tab-panel {
+    display: none;
+}
+
+.tab-panel.active {
+    display: block;
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* ============================================================
+   Interaction Checker
+   ============================================================ */
+.ix-intro {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.ix-intro p {
+    color: var(--text-3);
+    font-size: 0.9rem;
+}
+
+.ix-input-area {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.2rem;
+    margin-bottom: 1.5rem;
+}
+
+.ix-drug-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+}
+
+.ix-drug-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.ix-input {
+    flex: 1;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.7rem 1rem;
+    color: var(--text-1);
+    font-family: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color var(--transition);
+}
+
+.ix-input:focus {
+    border-color: var(--accent);
+}
+
+.ix-input::placeholder {
+    color: var(--text-3);
+}
+
+.ix-remove-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-3);
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition);
+    flex-shrink: 0;
+}
+
+.ix-remove-btn:hover {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border-color: rgba(248,113,113,0.3);
+}
+
+.ix-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.ix-add-btn {
+    background: none;
+    border: 1px dashed var(--border-active);
+    border-radius: var(--radius-sm);
+    color: var(--text-3);
+    padding: 0.5rem 1rem;
+    font-family: inherit;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.ix-add-btn:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.ix-check-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.ix-check-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.ix-check-btn:hover {
+    background: #4a7ce8;
+    transform: translateY(-1px);
+}
+
+/* Results */
+.ix-results {
+    animation: slideUp 0.4s ease-out;
+}
+
+.ix-summary {
+    padding: 1rem 1.2rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 1rem;
+    font-size: 0.92rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.ix-summary.safe {
+    background: var(--success-bg);
+    border: 1px solid rgba(52,211,153,0.2);
+    color: var(--success);
+}
+
+.ix-summary.warning {
+    background: var(--warning-bg);
+    border: 1px solid rgba(251,191,36,0.2);
+    color: var(--warning);
+}
+
+.ix-summary.danger {
+    background: var(--danger-bg);
+    border: 1px solid rgba(248,113,113,0.2);
+    color: var(--danger);
+}
+
+.ix-flags {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.ix-flag-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.2rem;
+    border-left: 3px solid var(--warning);
+}
+
+.ix-flag-card.severity-warning {
+    border-left-color: var(--danger);
+}
+
+.ix-flag-pair {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.ix-flag-drug {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--text-1);
+    text-transform: capitalize;
+}
+
+.ix-flag-arrow {
+    color: var(--text-3);
+    font-size: 0.8rem;
+}
+
+.ix-flag-severity {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.15rem 0.5rem;
+    border-radius: 100px;
+    margin-left: auto;
+}
+
+.ix-flag-severity.mentioned {
+    background: var(--warning-bg);
+    color: var(--warning);
+}
+
+.ix-flag-severity.warning {
+    background: var(--danger-bg);
+    color: var(--danger);
+}
+
+.ix-flag-detail {
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--text-2);
+}
+
+/* Per-drug interaction text */
+.ix-drug-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.ix-drug-detail {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.ix-drug-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 1.2rem;
+    cursor: pointer;
+    transition: background var(--transition);
+}
+
+.ix-drug-detail-header:hover {
+    background: var(--bg-hover);
+}
+
+.ix-drug-detail-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: capitalize;
+    color: var(--text-1);
+}
+
+.ix-drug-detail-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease;
+}
+
+.ix-drug-detail.open .ix-drug-detail-body {
+    max-height: 3000px;
+}
+
+.ix-drug-detail-content {
+    padding: 0 1.2rem 1rem;
+    font-size: 0.85rem;
+    line-height: 1.7;
+    color: var(--text-2);
+}
+
+/* ============================================================
+   Animations
+   ============================================================ */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ============================================================
+   Scrollbar
+   ============================================================ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg-hover); border-radius: 3px; }
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 600px) {
+    .app { padding: 1.5rem 1rem 3rem; }
+    .drug-header h2 { font-size: 1.5rem; }
+    .label-card { min-width: 170px; }
+    .detail-content { padding-left: 1.4rem; }
+    .tab { font-size: 0.78rem; padding: 0.6rem 0.5rem; }
+    .ix-actions { flex-direction: column; }
+    .ix-check-btn { margin-left: 0; width: 100%; justify-content: center; }
+}
+
