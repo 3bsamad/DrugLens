@@ -3,130 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DrugLens — Medication Assistant</title>
-    <meta name="description" content="Evidence-grounded medication information assistant. Look up drug details, side effects, warnings, and more.">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="color-scheme" content="light">
+    <title>DrugLens - Medication reference</title>
+    <meta name="description" content="Search FDA medication labels and scan retrieved label text for interaction-related language.">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="bg-noise"></div>
-    <div class="bg-gradient"></div>
+    <a class="skip-link" href="#mainContent">Skip to content</a>
 
-    <div class="app">
-        <header id="appHeader">
-            <div class="logo">
-                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
-                    <path d="M12 8v8M8 12h8"/>
-                </svg>
-                <h1>DrugLens</h1>
+    <div class="page-shell">
+        <header class="site-header">
+            <a class="brand" href="#" aria-label="DrugLens home">
+                <span class="brand-mark" aria-hidden="true"><span></span></span>
+                <span class="brand-copy">
+                    <strong>DrugLens</strong>
+                    <small>Medication reference</small>
+                </span>
+            </a>
+            <div class="source-note" aria-label="Data sources">
+                <span class="source-dot" aria-hidden="true"></span>
+                FDA label data + RxNorm
             </div>
-            <p class="tagline">Evidence-grounded medication intelligence</p>
         </header>
 
-        <!-- Tab Navigation -->
-        <div class="tab-bar">
-            <button class="tab active" data-tab="lookup" id="tabLookup">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                Drug Lookup
-            </button>
-            <button class="tab" data-tab="interactions" id="tabInteractions">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
-                Interaction Checker
-            </button>
-        </div>
+        <main id="mainContent">
+            <section class="intro" aria-labelledby="pageTitle">
+                <p class="kicker">Source-forward medication information</p>
+                <h1 id="pageTitle">Read the label, without the regulatory maze.</h1>
+                <p class="intro-copy">Search medication labeling from openFDA, inspect the source record, and scan retrieved labels for interaction-related language.</p>
+            </section>
 
-        <!-- ====================== TAB 1: Drug Lookup ====================== -->
-        <div class="tab-panel active" id="panelLookup">
-            <div class="search-wrapper">
-                <div class="search-container">
-                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                    </svg>
-                    <input type="text" id="drugInput" placeholder="Search any medication..." autocomplete="off" spellcheck="false" />
-                    <button id="searchBtn" aria-label="Search">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                            <path d="M5 12h14M12 5l7 7-7 7"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="search-hints">
-                    <span class="hint" data-drug="metformin">metformin</span>
-                    <span class="hint" data-drug="ibuprofen">ibuprofen</span>
-                    <span class="hint" data-drug="panadol">panadol</span>
-                    <span class="hint" data-drug="amoxicillin">amoxicillin</span>
-                </div>
-            </div>
+            <nav class="mode-tabs" role="tablist" aria-label="DrugLens tools">
+                <button class="mode-tab active" id="tabLookup" type="button" role="tab" aria-selected="true" aria-controls="panelLookup" tabindex="0" data-tab="lookup">Drug lookup</button>
+                <button class="mode-tab" id="tabInteractions" type="button" role="tab" aria-selected="false" aria-controls="panelInteractions" tabindex="-1" data-tab="interactions">Interaction scan</button>
+            </nav>
 
-            <div id="loading" class="loading hidden">
-                <div class="pulse-ring"></div>
-                <p>Querying FDA database...</p>
-            </div>
-
-            <div id="errorBox" class="error-box hidden"></div>
-
-            <div id="results" class="results hidden">
-                <div class="drug-header" id="drugHeader">
-                    <div class="drug-title-row">
-                        <h2 id="resName"></h2>
-                        <span class="rxcui-badge" id="resRxCui"></span>
+            <section class="tab-panel active" id="panelLookup" role="tabpanel" aria-labelledby="tabLookup">
+                <div class="search-zone">
+                    <label class="search-label" for="drugInput">Medication name</label>
+                    <div class="search-row">
+                        <input type="search" id="drugInput" placeholder="Try metformin, ibuprofen, amoxicillin..." autocomplete="off" spellcheck="false">
+                        <button class="primary-button" id="searchBtn" type="button">Search labels</button>
                     </div>
-                    <div class="meta-pills" id="resGenericPills"></div>
-                </div>
-
-                <div class="label-selector" id="labelSelector">
-                    <h3 class="section-label">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                        FDA Labels
-                    </h3>
-                    <div class="label-cards" id="labelCards"></div>
-                </div>
-
-                <div class="detail-panel" id="detailPanel">
-                    <div class="detail-sections" id="detailSections"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ====================== TAB 2: Interaction Checker ====================== -->
-        <div class="tab-panel" id="panelInteractions">
-            <div class="ix-intro">
-                <p>Enter two or more medications to check for known drug interactions from FDA labeling data.</p>
-            </div>
-
-            <div class="ix-input-area">
-                <div class="ix-drug-list" id="ixDrugList">
-                    <div class="ix-drug-row">
-                        <input type="text" class="ix-input" placeholder="Drug 1 (e.g., metformin)" autocomplete="off" spellcheck="false" />
-                        <button class="ix-remove-btn hidden" aria-label="Remove">×</button>
-                    </div>
-                    <div class="ix-drug-row">
-                        <input type="text" class="ix-input" placeholder="Drug 2 (e.g., warfarin)" autocomplete="off" spellcheck="false" />
-                        <button class="ix-remove-btn hidden" aria-label="Remove">×</button>
+                    <div class="example-row" aria-label="Example medications">
+                        <span>Examples</span>
+                        <button class="example-button" type="button" data-drug="metformin">Metformin</button>
+                        <button class="example-button" type="button" data-drug="ibuprofen">Ibuprofen</button>
+                        <button class="example-button" type="button" data-drug="amoxicillin">Amoxicillin</button>
                     </div>
                 </div>
-                <div class="ix-actions">
-                    <button class="ix-add-btn" id="ixAddBtn">+ Add another drug</button>
-                    <button class="ix-check-btn" id="ixCheckBtn">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
-                        Check Interactions
-                    </button>
+
+                <div id="lookupStatus" class="sr-only" role="status" aria-live="polite"></div>
+                <div id="errorBox" class="notice notice-error hidden" role="alert"></div>
+
+                <div id="loading" class="lookup-skeleton hidden" aria-hidden="true">
+                    <div class="skeleton-line skeleton-title"></div>
+                    <div class="skeleton-line skeleton-meta"></div>
+                    <div class="skeleton-grid">
+                        <div class="skeleton-nav"></div>
+                        <div class="skeleton-document">
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line short"></div>
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line short"></div>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <div id="ixLoading" class="loading hidden">
-                <div class="pulse-ring"></div>
-                <p>Analyzing interactions...</p>
-            </div>
+                <article id="results" class="drug-result hidden" aria-labelledby="resName">
+                    <header class="result-header">
+                        <div>
+                            <p class="result-label">Medication reference</p>
+                            <div class="title-line">
+                                <h2 id="resName"></h2>
+                                <code id="resRxCui" class="rxcui hidden"></code>
+                            </div>
+                            <p id="resMeta" class="result-meta"></p>
+                        </div>
+                    </header>
 
-            <div id="ixError" class="error-box hidden"></div>
+                    <section class="label-source" aria-labelledby="labelSourceTitle">
+                        <div class="label-source-heading">
+                            <div>
+                                <h3 id="labelSourceTitle">FDA label source</h3>
+                                <p>Choose which retrieved label record to read.</p>
+                            </div>
+                            <label class="select-wrap" for="labelSelect">
+                                <span>Label record</span>
+                                <select id="labelSelect"></select>
+                            </label>
+                        </div>
+                        <dl id="labelProvenance" class="provenance-grid"></dl>
+                    </section>
 
-            <div id="ixResults" class="ix-results hidden">
-                <div id="ixSummary" class="ix-summary"></div>
-                <div id="ixFlags" class="ix-flags"></div>
-                <div id="ixDrugDetails" class="ix-drug-details"></div>
-            </div>
-        </div>
+                    <div class="reference-layout">
+                        <aside class="section-index" aria-label="Medication label sections">
+                            <div class="section-index-inner">
+                                <p>On this label</p>
+                                <nav id="sectionNav"></nav>
+                            </div>
+                        </aside>
+                        <div id="detailSections" class="document-column"></div>
+                    </div>
+                </article>
+            </section>
+
+            <section class="tab-panel" id="panelInteractions" role="tabpanel" aria-labelledby="tabInteractions" hidden>
+                <div class="interaction-intro">
+                    <div>
+                        <p class="result-label">FDA label interaction scan</p>
+                        <h2>Look for interaction-related language across retrieved labels.</h2>
+                    </div>
+                    <p>This is a text evidence scan, not a clinical interaction database. A missing match does not rule out an interaction.</p>
+                </div>
+
+                <div class="interaction-composer">
+                    <div id="ixDrugList" class="medication-list"></div>
+                    <div class="composer-actions">
+                        <button class="secondary-button" id="ixAddBtn" type="button">Add medication</button>
+                        <button class="primary-button" id="ixCheckBtn" type="button">Scan retrieved labels</button>
+                    </div>
+                </div>
+
+                <div id="ixStatus" class="sr-only" role="status" aria-live="polite"></div>
+                <div id="ixError" class="notice notice-error hidden" role="alert"></div>
+                <div id="ixLoading" class="scan-loading hidden" role="status" aria-live="polite">Scanning FDA label text...</div>
+
+                <section id="ixResults" class="interaction-results hidden" aria-labelledby="ixResultsTitle">
+                    <div class="interaction-summary-block">
+                        <p class="result-label" id="ixResultsTitle">Scan result</p>
+                        <h3 id="ixSummary"></h3>
+                        <p id="ixLimitation" class="limitation"></p>
+                    </div>
+                    <div id="ixFlags" class="evidence-list"></div>
+                </section>
+            </section>
+        </main>
+
+        <footer class="site-footer">
+            <p><strong>Informational use only.</strong> DrugLens summarizes retrieved FDA labeling data and is not a substitute for professional medical advice, diagnosis, or treatment.</p>
+            <p>Data sources: NIH RxNorm and openFDA drug labels.</p>
+        </footer>
     </div>
 
     <script src="app.js"></script>

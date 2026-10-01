@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Coverage and tooling
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local data / caches
+data/
+*.sqlite3
+
+# Superpowers scratch workspace
+.superpowers/
+.worktrees/
