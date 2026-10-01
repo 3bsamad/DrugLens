@@ -1,214 +1,90 @@
-<p align="center">
-  <img src="https://img.shields.io/badge/python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white" />
-  <img src="https://img.shields.io/badge/FastAPI-0.100+-009688?style=flat-square&logo=fastapi&logoColor=white" />
-  <img src="https://img.shields.io/badge/FDA_OpenFDA-API-1a73e8?style=flat-square" />
-  <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" />
-</p>
+# DrugLens
 
-<h1 align="center">💊 DrugLens</h1>
-<p align="center">
-  <strong>Evidence-grounded medication intelligence assistant</strong><br>
-  <sub>Look up any drug. Check interactions. All backed by real FDA data.</sub>
-</p>
+**A source-forward medication reference built on NIH RxNorm and openFDA drug labels.**
 
-<div align="center">
-  <img src="images/druglens_search.png" alt="DrugLens Search Interface" width="48%">
-  <img src="images/druglens_interaction.png" alt="DrugLens Interaction Checker" width="48%">
-</div>
+DrugLens helps you inspect FDA medication labeling without reading raw regulatory payloads. It provides a structured drug lookup and an interaction-language scan across the FDA label records retrieved for the medications you enter.
 
----
+> DrugLens is for informational use only. It is not a substitute for medical advice, diagnosis, or treatment.
 
-## What is DrugLens?
+## What it does
 
-DrugLens is a lightweight, self-hosted medication assistant that bridges the gap between dense FDA pharmacological databases and everyday readability. Type in a medicine name and instantly get structured, cleaned information — indications, side effects, warnings, dosages, and more — pulled directly from official FDA drug labels.
+### Drug lookup
 
-It's built for **personal use**, **students**, and **healthcare professionals** who want fast, no-nonsense access to drug data without wading through walls of regulatory text.
+Search by a brand, generic, or active ingredient name. DrugLens resolves the query with RxNorm when possible, retrieves up to five matching openFDA label records, and presents their content in a readable reference layout.
 
-### ✨ Key Features
+The UI surfaces source provenance such as manufacturer, route, effective date, application number, Set ID, and RxCUI when those fields are available.
 
-| Feature | Description |
+### FDA label interaction scan
+
+Enter two to six medications. DrugLens scans interaction-related sections from the retrieved FDA label records and looks for references to the other medications or their active substances.
+
+Results are intentionally described as **label-derived evidence**, not clinical interaction severity:
+
+- **Mention detected** means the other medication or substance appears in retrieved interaction-related label text.
+- **Caution language detected** means the matching excerpt also contains caution terms such as `avoid`, `contraindicated`, `risk`, or `caution`.
+- **No matching interaction language detected** means DrugLens did not find a text match in the retrieved records. It does **not** rule out an interaction and does not establish that a medication combination is appropriate.
+
+DrugLens is not a replacement for a pharmacist, clinician, or validated clinical interaction database.
+
+## Data sources
+
+| Source | Purpose |
 |---|---|
-| **🔍 Drug Lookup** | Search by brand name, generic name, or active ingredient. Returns all matching FDA labels. |
-| **⚡ Drug Interaction Checker** | Enter 2–6 medications and get instant cross-referencing against FDA interaction data. Flags are color-coded by severity. |
-| **📋 Multi-Label Support** | Many drugs have multiple FDA labels from different manufacturers. Browse and compare them all. |
-| **🧹 Smart Text Cleaning** | Strips section numbers, redundant headers, and regulatory boilerplate so you see only the useful content. |
-| **🌊 Cascading Search** | Resolves drugs via RxNorm → RxCUI → FDA label. Falls back through generic name → brand name searches automatically. |
+| NIH RxNorm | Resolve medication names to standardized RxCUI identifiers when possible |
+| openFDA Drug Labels | Retrieve structured FDA labeling sections and source metadata |
 
----
+openFDA results are not exhaustive clinical knowledge. Some records do not contain harmonized identifiers, not every label exposes every section, and DrugLens currently limits each lookup to five retrieved label records.
 
 ## Architecture
 
-```
-┌──────────────────────────────────────────────────┐
-│                   Frontend                       │
-│          Vanilla HTML / CSS / JS                 │
-│    ┌──────────────┐  ┌────────────────────┐      │
-│    │  Drug Lookup  │  │ Interaction Checker │      │
-│    └──────┬───────┘  └────────┬───────────┘      │
-└───────────┼───────────────────┼───────────────────┘
-            │                   │
-            ▼                   ▼
-┌──────────────────────────────────────────────────┐
-│               FastAPI Backend                    │
-│                                                  │
-│  GET /api/drugs/{name}      → DrugSearchResult   │
-│  GET /api/interactions?drugs=a,b  → InteractionCheck │
-│  GET /health                → { status: ok }     │
-│                                                  │
-│  ┌────────────────────────────────────────────┐  │
-│  │           Ingestion Layer                  │  │
-│  │  drug_client.py                            │  │
-│  │  • get_rxcui()       → NIH RxNorm API     │  │
-│  │  • get_fda_labels()  → OpenFDA API         │  │
-│  │  • get_drug_interactions()                 │  │
-│  └────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────┘
-            │                   │
-            ▼                   ▼
-    ┌───────────────┐   ┌───────────────┐
-    │  NIH RxNorm   │   │  OpenFDA API  │
-    │  (Drug IDs)   │   │  (Labels)     │
-    └───────────────┘   └───────────────┘
+```text
+Browser
+  |
+  | GET /api/drugs/{name}
+  | GET /api/interactions?drugs=a,b
+  v
+FastAPI
+  |
+  +-- services/drugs.py
+  |     clean/normalize FDA label data
+  |     resolve one reusable medication object per query
+  |
+  +-- services/interactions.py
+  |     scan retrieved label text for cross-medication evidence
+  |
+  +-- clients/drug_sources.py
+        RxNorm + openFDA HTTP access
 ```
 
----
+The frontend is intentionally framework-free HTML, CSS, and JavaScript. The backend uses FastAPI, Pydantic, requests, and a small service/client split for testability.
 
-## Quick Start
-
-### Prerequisites
-
-- Python 3.12+
-- `pip` packages: `fastapi`, `uvicorn`, `requests`, `pydantic`
-
-### 1. Clone & Install
+## Quick start
 
 ```bash
-git clone https://github.com/yourusername/DrugLens.git
+git clone https://github.com/3bsamad/DrugLens.git
 cd DrugLens
-pip install fastapi uvicorn requests pydantic
-```
-
-### 2. Run
-
-```bash
+python -m venv .venv
+pip install -r requirements.txt
 python -m uvicorn backend.app.main:app --reload
 ```
 
-### 3. Open
+Open `http://localhost:8000`.
 
-Navigate to **http://localhost:8000** in your browser.
+Run tests with:
 
----
-
-## Project Structure
-
-```
-DrugLens/
-├── backend/
-│   └── app/
-│       ├── __init__.py
-│       └── main.py             # FastAPI app, endpoints, Pydantic models
-├── frontend/
-│   ├── index.html              # UI structure (tabs, search, results)
-│   ├── style.css               # Dark theme, glassmorphism, animations
-│   └── app.js                  # Client logic, tab switching, rendering
-├── ingestion/
-│   ├── drug_client.py          # RxNorm + OpenFDA API client functions
-│   └── fetch_drug.py           # Standalone fetch utilities
-├── data/                       # Local data cache (if needed)
-├── tests/                      # Test suite
-└── README.md
+```bash
+pytest -q
 ```
 
----
+## Safety and reliability choices
 
-## API Reference
-
-### `GET /api/drugs/{drug_name}`
-
-Look up a medication by name. Returns up to 5 matching FDA labels with parsed fields.
-
-**Response:**
-```json
-{
-  "name": "metformin",
-  "rxcui": "6809",
-  "label_count": 5,
-  "labels": [
-    {
-      "brand_names": ["ZITUVIMET"],
-      "generic_names": ["SITAGLIPTIN AND METFORMIN HYDROCHLORIDE"],
-      "manufacturer": ["Zydus Lifesciences Limited"],
-      "substance_name": ["SITAGLIPTIN", "METFORMIN HYDROCHLORIDE"],
-      "route": ["ORAL"],
-      "product_type": "HUMAN PRESCRIPTION DRUG",
-      "indications_and_usage": "...",
-      "adverse_reactions": "...",
-      "warnings": "...",
-      "contraindications": "...",
-      "dosage_and_administration": "..."
-    }
-  ]
-}
-```
-
-### `GET /api/interactions?drugs=drug1,drug2`
-
-Check for known interactions between 2–6 drugs. Cross-references each drug's FDA interaction text against the others' names and active substances.
-
-**Response:**
-```json
-{
-  "drugs": [
-    { "drug_name": "metformin", "rxcui": "6809", "found": true, "interaction_text": "..." },
-    { "drug_name": "insulin", "rxcui": "5856", "found": true, "interaction_text": "..." }
-  ],
-  "flags": [
-    {
-      "drug_a": "metformin",
-      "drug_b": "insulin",
-      "severity": "warning",
-      "detail": "Coadministration may increase the risk of hypoglycemia..."
-    }
-  ],
-  "summary": "Found 1 potential interaction(s), including 1 that may need attention."
-}
-```
-
----
-
-## Data Sources
-
-| Source | Used For | URL |
-|---|---|---|
-| **NIH RxNorm** | Resolving drug names → standardized RxCUI identifiers | [rxnav.nlm.nih.gov](https://rxnav.nlm.nih.gov/) |
-| **OpenFDA Drug Labels** | Full structured drug label data (indications, warnings, interactions, etc.) | [api.fda.gov](https://api.fda.gov/) |
-
-Both APIs are **free**, **public**, and require **no API key**.
-
----
-
-## Roadmap
-
-- [x] Drug lookup with multi-label support
-- [x] Drug interaction checker
-- [x] Smart text cleaning (strip section numbers & headers)
-- [x] Cascading search fallback (RxCUI → generic → brand)
-- [ ] LLM-powered plain-English summaries (Qwen2.5-0.5B)
-- [ ] Adverse event reports with charts (OpenFDA `/drug/event.json`)
-- [ ] Drug recall alerts (OpenFDA `/drug/enforcement.json`)
-- [ ] Personal medicine cabinet with interaction monitoring
-- [ ] Drug comparison mode (side-by-side)
-- [ ] Pill identifier
-
----
-
-## Disclaimer
-
-> **DrugLens is for informational purposes only.** It is not a substitute for professional medical advice, diagnosis, or treatment. Always consult a qualified healthcare provider before making medication decisions. The data comes directly from FDA-approved labeling and may not reflect the most recent updates.
-
----
+- Remote FDA/RxNorm text is rendered with DOM `textContent`, not injected as HTML.
+- RxNorm/openFDA timeouts and dependency failures are distinguished from valid no-result responses.
+- Duplicate medication inputs are normalized before interaction scanning.
+- FDA field arrays are combined instead of silently discarding all but the first fragment.
+- The interaction scan reuses one resolved medication object per input instead of repeating the same upstream calls.
+- The UI never presents a missing text match as a green or "safe" result.
 
 ## License
 
-MIT — do whatever you want with it.
+MIT. See [LICENSE](LICENSE).

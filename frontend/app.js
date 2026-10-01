@@ -1,261 +1,270 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+    const panels = Array.from(document.querySelectorAll('[role="tabpanel"]'));
 
-    // ============================================================
-    // Tab Switching
-    // ============================================================
-    const tabs = document.querySelectorAll('.tab');
-    const panels = document.querySelectorAll('.tab-panel');
+    function activateTab(tab) {
+        tabs.forEach((item) => {
+            const selected = item === tab;
+            item.classList.toggle('active', selected);
+            item.setAttribute('aria-selected', String(selected));
+            item.tabIndex = selected ? 0 : -1;
+        });
+        panels.forEach((panel) => {
+            const selected = panel.id === tab.getAttribute('aria-controls');
+            panel.classList.toggle('active', selected);
+            panel.hidden = !selected;
+        });
+    }
 
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            tabs.forEach(t => t.classList.remove('active'));
-            panels.forEach(p => p.classList.remove('active'));
-            tab.classList.add('active');
-            document.getElementById('panel' + capitalize(tab.dataset.tab)).classList.add('active');
+    tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => activateTab(tab));
+        tab.addEventListener('keydown', (event) => {
+            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+            event.preventDefault();
+            let nextIndex = index;
+            if (event.key === 'ArrowRight') nextIndex = (index + 1) % tabs.length;
+            if (event.key === 'ArrowLeft') nextIndex = (index - 1 + tabs.length) % tabs.length;
+            if (event.key === 'Home') nextIndex = 0;
+            if (event.key === 'End') nextIndex = tabs.length - 1;
+            tabs[nextIndex].focus();
+            activateTab(tabs[nextIndex]);
         });
     });
 
-    function capitalize(s) {
-        return s.charAt(0).toUpperCase() + s.slice(1);
-    }
-
-    // ============================================================
-    // TAB 1: Drug Lookup
-    // ============================================================
     const drugInput = document.getElementById('drugInput');
     const searchBtn = document.getElementById('searchBtn');
     const loading = document.getElementById('loading');
     const errorBox = document.getElementById('errorBox');
     const results = document.getElementById('results');
-
+    const lookupStatus = document.getElementById('lookupStatus');
     const resName = document.getElementById('resName');
     const resRxCui = document.getElementById('resRxCui');
-    const resGenericPills = document.getElementById('resGenericPills');
-    const labelCards = document.getElementById('labelCards');
+    const resMeta = document.getElementById('resMeta');
+    const labelSelect = document.getElementById('labelSelect');
+    const labelProvenance = document.getElementById('labelProvenance');
+    const sectionNav = document.getElementById('sectionNav');
     const detailSections = document.getElementById('detailSections');
 
-    // Hint chips
-    document.querySelectorAll('.hint').forEach(hint => {
-        hint.addEventListener('click', () => {
-            drugInput.value = hint.dataset.drug;
+    document.querySelectorAll('[data-drug]').forEach((button) => {
+        button.addEventListener('click', () => {
+            drugInput.value = button.dataset.drug || '';
             performSearch();
         });
     });
 
     searchBtn.addEventListener('click', performSearch);
-    drugInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') performSearch();
+    drugInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') performSearch();
     });
+
+    function setLookupBusy(isBusy) {
+        searchBtn.disabled = isBusy;
+        drugInput.setAttribute('aria-busy', String(isBusy));
+        loading.classList.toggle('hidden', !isBusy);
+    }
 
     async function performSearch() {
         const query = drugInput.value.trim();
-        if (!query) return;
+        if (!query) {
+            drugInput.focus();
+            return;
+        }
 
         errorBox.classList.add('hidden');
         results.classList.add('hidden');
-        loading.classList.remove('hidden');
+        setLookupBusy(true);
+        lookupStatus.textContent = `Searching FDA labels for ${query}.`;
 
         try {
             const response = await fetch(`/api/drugs/${encodeURIComponent(query)}`);
-            let data;
-            const ct = response.headers.get('content-type');
-            if (ct && ct.includes('application/json')) {
-                data = await response.json();
-            } else {
-                const text = await response.text();
-                throw new Error(text || 'Internal Server Error');
-            }
-
-            if (!response.ok) {
-                throw new Error(data.detail || 'Failed to fetch drug information.');
-            }
-
-            renderResults(data);
-            loading.classList.add('hidden');
+            const data = await readJsonResponse(response);
+            if (!response.ok) throw new Error(data.detail || 'Unable to retrieve medication information.');
+            renderDrug(data);
             results.classList.remove('hidden');
-        } catch (err) {
-            loading.classList.add('hidden');
-            errorBox.textContent = err.message;
+            lookupStatus.textContent = `Loaded ${data.label_count} FDA label record${data.label_count === 1 ? '' : 's'} for ${data.name}.`;
+            results.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
+        } catch (error) {
+            errorBox.textContent = error.message;
             errorBox.classList.remove('hidden');
+            lookupStatus.textContent = 'Medication lookup failed.';
+        } finally {
+            setLookupBusy(false);
         }
     }
 
-    function renderResults(data) {
-        resName.textContent = data.name;
-
+    function renderDrug(data) {
+        resName.textContent = titleCase(data.name || drugInput.value.trim());
         if (data.rxcui) {
             resRxCui.textContent = `RxCUI ${data.rxcui}`;
-            resRxCui.style.display = 'inline-block';
+            resRxCui.classList.remove('hidden');
         } else {
-            resRxCui.style.display = 'none';
+            resRxCui.textContent = '';
+            resRxCui.classList.add('hidden');
         }
+        resMeta.textContent = `${data.label_count} FDA label record${data.label_count === 1 ? '' : 's'} retrieved. DrugLens requests up to ${data.retrieval_limit || 5} records per search.`;
 
-        const allGenerics = new Set();
-        data.labels.forEach(l => l.generic_names.forEach(n => allGenerics.add(n)));
-        resGenericPills.innerHTML = '';
-        allGenerics.forEach(name => {
-            const el = document.createElement('span');
-            el.className = 'meta-pill';
-            el.textContent = name;
-            resGenericPills.appendChild(el);
+        labelSelect.replaceChildren();
+        data.labels.forEach((label, index) => {
+            const option = document.createElement('option');
+            option.value = String(index);
+            const brand = first(label.brand_names) || first(label.generic_names) || `Label ${index + 1}`;
+            const manufacturer = first(label.manufacturer) || 'Unknown manufacturer';
+            option.textContent = `${brand} - ${manufacturer}`;
+            labelSelect.append(option);
         });
 
-        labelCards.innerHTML = '';
-        data.labels.forEach((label, idx) => {
-            const card = document.createElement('div');
-            card.className = 'label-card' + (idx === 0 ? ' active' : '');
-            card.innerHTML = `
-                <div class="lc-brand">${label.brand_names[0] || label.generic_names[0] || 'Unknown'}</div>
-                <div class="lc-manufacturer">${label.manufacturer[0] || 'Unknown manufacturer'}</div>
-                ${label.route[0] ? `<span class="lc-route">${label.route[0]}</span>` : ''}
-            `;
-            card.addEventListener('click', () => {
-                document.querySelectorAll('.label-card').forEach(c => c.classList.remove('active'));
-                card.classList.add('active');
-                renderDetail(label);
-            });
-            labelCards.appendChild(card);
-        });
-
-        if (data.labels.length > 0) {
-            renderDetail(data.labels[0]);
-        }
+        const selectLabel = (index) => renderLabel(data.labels[index]);
+        labelSelect.onchange = () => selectLabel(Number(labelSelect.value));
+        if (data.labels.length) selectLabel(0);
     }
 
-    function renderDetail(label) {
+    function renderLabel(label) {
+        renderProvenance(label);
         const sections = buildSections(label);
-        detailSections.innerHTML = '';
+        sectionNav.replaceChildren();
+        detailSections.replaceChildren();
 
-        // Quick info row
-        const quickRow = document.createElement('div');
-        quickRow.className = 'quick-row';
-        if (label.brand_names.length) {
-            label.brand_names.forEach(b => {
-                quickRow.innerHTML += `<span class="quick-chip chip-brand">${b}</span>`;
+        sections.forEach((section) => {
+            const id = `label-${section.key}`;
+            const navLink = document.createElement('a');
+            navLink.href = `#${id}`;
+            navLink.textContent = section.title;
+            sectionNav.append(navLink);
+
+            const article = document.createElement('section');
+            article.className = section.emphasis ? `document-section ${section.emphasis}` : 'document-section';
+            article.id = id;
+
+            const heading = document.createElement('h3');
+            heading.textContent = section.title;
+            article.append(heading);
+
+            String(section.text).split(/\n\s*\n/).filter(Boolean).forEach((paragraphText) => {
+                const paragraph = document.createElement('p');
+                paragraph.textContent = paragraphText.trim();
+                article.append(paragraph);
             });
-        }
-        if (label.substance_name.length) {
-            label.substance_name.forEach(s => {
-                quickRow.innerHTML += `<span class="quick-chip chip-substance">${s}</span>`;
-            });
-        }
-        if (label.product_type) {
-            quickRow.innerHTML += `<span class="quick-chip chip-type">${label.product_type}</span>`;
-        }
-        detailSections.appendChild(quickRow);
+            detailSections.append(article);
+        });
+    }
 
-        // Accordion sections
-        sections.forEach((section, idx) => {
-            const el = document.createElement('div');
-            el.className = 'detail-section' + (idx === 0 ? ' open' : '');
-
-            const chevronSvg = `<svg class="detail-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>`;
-
-            el.innerHTML = `
-                <div class="detail-header">
-                    <div class="detail-header-left">
-                        <span class="detail-dot dot-${section.dot}"></span>
-                        <span class="detail-header-title">${section.title}</span>
-                    </div>
-                    ${chevronSvg}
-                </div>
-                <div class="detail-body">
-                    <div class="detail-content${section.text ? '' : ' empty'}">
-                        ${section.text || 'Not available for this label.'}
-                    </div>
-                </div>
-            `;
-
-            el.querySelector('.detail-header').addEventListener('click', () => {
-                el.classList.toggle('open');
-            });
-
-            detailSections.appendChild(el);
+    function renderProvenance(label) {
+        labelProvenance.replaceChildren();
+        const items = [
+            ['Manufacturer', first(label.manufacturer) || 'Not listed'],
+            ['Route', first(label.route) || 'Not listed'],
+            ['Effective date', formatFdaDate(label.effective_date) || 'Not listed'],
+            ['Application', first(label.application_number) || 'Not listed'],
+            ['Set ID', label.set_id || 'Not listed'],
+        ];
+        items.forEach(([term, value]) => {
+            const wrapper = document.createElement('div');
+            const dt = document.createElement('dt');
+            const dd = document.createElement('dd');
+            dt.textContent = term;
+            dd.textContent = value;
+            wrapper.append(dt, dd);
+            labelProvenance.append(wrapper);
         });
     }
 
     function buildSections(label) {
         return [
-            { title: 'Active Ingredient', text: label.active_ingredient, dot: 'success' },
-            { title: 'Indications & Usage', text: label.indications_and_usage, dot: 'info' },
-            { title: 'Dosage & Administration', text: label.dosage_and_administration, dot: 'info' },
-            { title: 'Adverse Reactions', text: label.adverse_reactions, dot: 'danger' },
-            { title: 'Contraindications', text: label.contraindications, dot: 'danger' },
-            { title: 'Warnings', text: label.warnings, dot: 'warning' },
-            { title: 'Stop Use', text: label.stop_use, dot: 'warning' },
-            { title: 'Ask Doctor / Pharmacist', text: label.ask_doctor, dot: 'warning' },
-            { title: 'Pregnancy / Breast-Feeding', text: label.pregnancy_or_breast_feeding, dot: 'warning' },
-            { title: 'Description', text: label.description, dot: 'neutral' },
-        ].filter(s => s.text);
+            { key: 'active-ingredient', title: 'Active ingredient', text: label.active_ingredient },
+            { key: 'indications', title: 'Indications and usage', text: label.indications_and_usage },
+            { key: 'dosage', title: 'Dosage and administration', text: label.dosage_and_administration },
+            { key: 'warnings', title: 'Warnings', text: label.warnings, emphasis: 'document-warning' },
+            { key: 'contraindications', title: 'Contraindications', text: label.contraindications, emphasis: 'document-alert' },
+            { key: 'adverse-reactions', title: 'Adverse reactions', text: label.adverse_reactions },
+            { key: 'ask-doctor', title: 'Ask a doctor or pharmacist', text: label.ask_doctor },
+            { key: 'stop-use', title: 'Stop use', text: label.stop_use },
+            { key: 'pregnancy', title: 'Pregnancy and breastfeeding', text: label.pregnancy_or_breast_feeding },
+            { key: 'description', title: 'Description', text: label.description },
+        ].filter((section) => section.text);
     }
 
-    // ============================================================
-    // TAB 2: Interaction Checker
-    // ============================================================
     const ixDrugList = document.getElementById('ixDrugList');
     const ixAddBtn = document.getElementById('ixAddBtn');
     const ixCheckBtn = document.getElementById('ixCheckBtn');
-    const ixLoading = document.getElementById('ixLoading');
+    const ixStatus = document.getElementById('ixStatus');
     const ixError = document.getElementById('ixError');
+    const ixLoading = document.getElementById('ixLoading');
     const ixResults = document.getElementById('ixResults');
     const ixSummary = document.getElementById('ixSummary');
+    const ixLimitation = document.getElementById('ixLimitation');
     const ixFlags = document.getElementById('ixFlags');
-    const ixDrugDetails = document.getElementById('ixDrugDetails');
 
-    let drugRowCount = 2;
+    let nextDrugRowId = 1;
+    addDrugRow('metformin');
+    addDrugRow('warfarin');
 
-    // Add drug row
-    ixAddBtn.addEventListener('click', () => {
-        if (drugRowCount >= 6) return;
-        drugRowCount++;
-        const row = document.createElement('div');
-        row.className = 'ix-drug-row';
-        row.innerHTML = `
-            <input type="text" class="ix-input" placeholder="Drug ${drugRowCount}" autocomplete="off" spellcheck="false" />
-            <button class="ix-remove-btn" aria-label="Remove">×</button>
-        `;
-        row.querySelector('.ix-remove-btn').addEventListener('click', () => {
-            row.remove();
-            drugRowCount--;
-            updateRemoveButtons();
-        });
-        ixDrugList.appendChild(row);
-        updateRemoveButtons();
-        row.querySelector('.ix-input').focus();
+    ixAddBtn.addEventListener('click', () => addDrugRow(''));
+    ixCheckBtn.addEventListener('click', performInteractionCheck);
+    ixDrugList.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && event.target.matches('input')) performInteractionCheck();
     });
 
-    function updateRemoveButtons() {
-        const rows = ixDrugList.querySelectorAll('.ix-drug-row');
-        rows.forEach(r => {
-            const btn = r.querySelector('.ix-remove-btn');
-            if (rows.length > 2) {
-                btn.classList.remove('hidden');
-            } else {
-                btn.classList.add('hidden');
-            }
+    function addDrugRow(value) {
+        const currentRows = ixDrugList.querySelectorAll('.medication-row');
+        if (currentRows.length >= 6) return;
+        const rowNumber = nextDrugRowId++;
+        const row = document.createElement('div');
+        row.className = 'medication-row';
+
+        const field = document.createElement('div');
+        field.className = 'medication-field';
+        const label = document.createElement('label');
+        label.htmlFor = `ixDrug${rowNumber}`;
+        label.textContent = `Medication ${currentRows.length + 1}`;
+        const input = document.createElement('input');
+        input.id = `ixDrug${rowNumber}`;
+        input.className = 'ix-input';
+        input.type = 'text';
+        input.autocomplete = 'off';
+        input.spellcheck = false;
+        input.value = value;
+        input.placeholder = 'Enter a brand or generic name';
+        field.append(label, input);
+
+        const remove = document.createElement('button');
+        remove.className = 'remove-button';
+        remove.type = 'button';
+        remove.textContent = 'Remove';
+        remove.setAttribute('aria-label', `Remove medication ${currentRows.length + 1}`);
+        remove.addEventListener('click', () => {
+            row.remove();
+            refreshMedicationRows();
         });
+
+        row.append(field, remove);
+        ixDrugList.append(row);
+        refreshMedicationRows();
+        if (!value) input.focus();
     }
 
-    // Check interactions
-    ixCheckBtn.addEventListener('click', performInteractionCheck);
-
-    // Allow Enter key in any interaction input
-    ixDrugList.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && e.target.classList.contains('ix-input')) {
-            performInteractionCheck();
-        }
-    });
+    function refreshMedicationRows() {
+        const rows = Array.from(ixDrugList.querySelectorAll('.medication-row'));
+        rows.forEach((row, index) => {
+            row.querySelector('label').textContent = `Medication ${index + 1}`;
+            const remove = row.querySelector('.remove-button');
+            remove.classList.toggle('hidden', rows.length <= 2);
+            remove.setAttribute('aria-label', `Remove medication ${index + 1}`);
+        });
+        ixAddBtn.disabled = rows.length >= 6;
+    }
 
     async function performInteractionCheck() {
-        const inputs = ixDrugList.querySelectorAll('.ix-input');
-        const drugNames = [];
-        inputs.forEach(input => {
-            const val = input.value.trim();
-            if (val) drugNames.push(val);
+        const rawNames = Array.from(ixDrugList.querySelectorAll('.ix-input')).map((input) => input.value.trim()).filter(Boolean);
+        const seen = new Set();
+        const names = rawNames.filter((name) => {
+            const key = name.toLocaleLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
         });
 
-        if (drugNames.length < 2) {
-            ixError.textContent = 'Please enter at least 2 drug names.';
+        if (names.length < 2) {
+            ixError.textContent = 'Enter at least two unique medications to scan.';
             ixError.classList.remove('hidden');
             return;
         }
@@ -263,104 +272,94 @@ document.addEventListener('DOMContentLoaded', () => {
         ixError.classList.add('hidden');
         ixResults.classList.add('hidden');
         ixLoading.classList.remove('hidden');
+        ixCheckBtn.disabled = true;
+        ixStatus.textContent = 'Scanning retrieved FDA labels for interaction-related language.';
 
         try {
-            const response = await fetch(`/api/interactions?drugs=${encodeURIComponent(drugNames.join(','))}`);
-            let data;
-            const ct = response.headers.get('content-type');
-            if (ct && ct.includes('application/json')) {
-                data = await response.json();
-            } else {
-                throw new Error(await response.text() || 'Server error');
-            }
-
-            if (!response.ok) {
-                throw new Error(data.detail || 'Failed to check interactions.');
-            }
-
+            const response = await fetch(`/api/interactions?drugs=${encodeURIComponent(names.join(','))}`);
+            const data = await readJsonResponse(response);
+            if (!response.ok) throw new Error(data.detail || 'Unable to scan interaction language.');
             renderInteractionResults(data);
-            ixLoading.classList.add('hidden');
             ixResults.classList.remove('hidden');
-        } catch (err) {
-            ixLoading.classList.add('hidden');
-            ixError.textContent = err.message;
+            ixStatus.textContent = data.summary;
+            ixResults.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
+        } catch (error) {
+            ixError.textContent = error.message;
             ixError.classList.remove('hidden');
+            ixStatus.textContent = 'Interaction scan failed.';
+        } finally {
+            ixLoading.classList.add('hidden');
+            ixCheckBtn.disabled = false;
         }
     }
 
     function renderInteractionResults(data) {
-        // Summary banner
-        const hasWarnings = data.flags.some(f => f.severity === 'warning');
-        const hasFlags = data.flags.length > 0;
+        ixSummary.textContent = data.summary;
+        ixLimitation.textContent = data.limitation;
+        ixFlags.replaceChildren();
 
-        let summaryClass = 'safe';
-        let summaryIcon = '✓';
-        if (hasWarnings) {
-            summaryClass = 'danger';
-            summaryIcon = '⚠';
-        } else if (hasFlags) {
-            summaryClass = 'warning';
-            summaryIcon = '⚡';
+        if (!data.evidence.length) {
+            const empty = document.createElement('div');
+            empty.className = 'no-evidence';
+            const label = document.createElement('strong');
+            label.textContent = 'No text match detected';
+            const copy = document.createElement('p');
+            copy.textContent = 'DrugLens did not find one medication named in the interaction-related sections retrieved for the other medication.';
+            empty.append(label, copy);
+            ixFlags.append(empty);
+            return;
         }
 
-        ixSummary.className = `ix-summary ${summaryClass}`;
-        ixSummary.innerHTML = `<span>${summaryIcon}</span> ${data.summary}`;
+        data.evidence.forEach((evidence) => {
+            const card = document.createElement('article');
+            card.className = `evidence-card ${evidence.evidence_type === 'caution_language' ? 'evidence-caution' : ''}`;
 
-        // Interaction flags
-        ixFlags.innerHTML = '';
-        if (data.flags.length > 0) {
-            data.flags.forEach(flag => {
-                const card = document.createElement('div');
-                card.className = `ix-flag-card${flag.severity === 'warning' ? ' severity-warning' : ''}`;
-                card.innerHTML = `
-                    <div class="ix-flag-pair">
-                        <span class="ix-flag-drug">${flag.drug_a}</span>
-                        <span class="ix-flag-arrow">↔</span>
-                        <span class="ix-flag-drug">${flag.drug_b}</span>
-                        <span class="ix-flag-severity ${flag.severity}">${flag.severity}</span>
-                    </div>
-                    <div class="ix-flag-detail">${flag.detail}</div>
-                `;
-                ixFlags.appendChild(card);
-            });
-        }
+            const header = document.createElement('div');
+            header.className = 'evidence-header';
+            const pair = document.createElement('h4');
+            pair.textContent = `${titleCase(evidence.drug_a)} + ${titleCase(evidence.drug_b)}`;
+            const badge = document.createElement('span');
+            badge.className = 'evidence-kind';
+            badge.textContent = evidence.evidence_type === 'caution_language' ? 'Caution language detected' : 'Mention detected';
+            header.append(pair, badge);
 
-        // Per-drug full interaction text (collapsible)
-        ixDrugDetails.innerHTML = '';
-        const drugsWithText = data.drugs.filter(d => d.interaction_text);
+            const quote = document.createElement('blockquote');
+            quote.textContent = evidence.excerpt;
 
-        if (drugsWithText.length > 0) {
-            const header = document.createElement('h3');
-            header.className = 'section-label';
-            header.style.marginTop = '0.5rem';
-            header.innerHTML = `
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                Full Interaction Details
-            `;
-            ixDrugDetails.appendChild(header);
+            const source = document.createElement('p');
+            source.className = 'evidence-source';
+            const sourceBits = [`Source: ${titleCase(evidence.source_drug)} FDA label`];
+            if (evidence.source_manufacturer) sourceBits.push(evidence.source_manufacturer);
+            sourceBits.push(`matched "${evidence.matched_term}"`);
+            source.textContent = sourceBits.join(' · ');
 
-            drugsWithText.forEach(drug => {
-                const detail = document.createElement('div');
-                detail.className = 'ix-drug-detail';
+            card.append(header, quote, source);
+            ixFlags.append(card);
+        });
+    }
 
-                const chevronSvg = `<svg class="detail-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+    async function readJsonResponse(response) {
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) return response.json();
+        const text = await response.text();
+        return { detail: text || 'Unexpected server response.' };
+    }
 
-                detail.innerHTML = `
-                    <div class="ix-drug-detail-header">
-                        <span class="ix-drug-detail-name">${drug.drug_name}</span>
-                        ${chevronSvg}
-                    </div>
-                    <div class="ix-drug-detail-body">
-                        <div class="ix-drug-detail-content">${drug.interaction_text}</div>
-                    </div>
-                `;
+    function first(value) {
+        return Array.isArray(value) && value.length ? value[0] : '';
+    }
 
-                detail.querySelector('.ix-drug-detail-header').addEventListener('click', () => {
-                    detail.classList.toggle('open');
-                });
+    function titleCase(value) {
+        return String(value || '').toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+    }
 
-                ixDrugDetails.appendChild(detail);
-            });
-        }
+    function formatFdaDate(value) {
+        if (!value || !/^\d{8}$/.test(String(value))) return value || '';
+        const text = String(value);
+        return `${text.slice(0, 4)}-${text.slice(4, 6)}-${text.slice(6, 8)}`;
+    }
+
+    function prefersReducedMotion() {
+        return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     }
 });
